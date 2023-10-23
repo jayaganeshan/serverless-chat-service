@@ -1,0 +1,60 @@
+service: sls-chat
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: dev
+  region: ap-south-1
+  websocketApiName: serverless-chat-api
+  websocketApiRouteSelectionExpression: $request.body.action
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - 'execute-api:ManageConnections'
+      Resource:
+        - 'arn:aws:execute-api:*:*:**/@connections/*'
+    - Effect: Allow
+      Action:
+        - 'dynamodb:PutItem'
+        - 'dynamodb:GetItem'
+        - 'dynamodb:UpdateItem'
+        - 'dynamodb:DeleteItem'
+        - 'dynamodb:BatchGetItem'
+        - 'dynamodb:BatchWriteItem'
+        - 'dynamodb:Scan'
+        - 'dynamodb:Query'
+      Resource:
+        - 'arn:aws:dynamodb:ap-south-1:*:*'
+plugins:
+  - serverless-offline
+  - serverless-plugin-typescript
+
+functions:
+  connectionManager:
+    handler: handler.connection_manager
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+  defaultMessage:
+    handler: handler.default_message
+    events:
+      - websocket:
+          route: $default
+  getRecentMessages:
+    handler: handler.get_recent_messages
+    events:
+      - websocket:
+          route: getRecentMessages
+  sendMessage:
+    handler: handler.send_message
+    events:
+      - websocket:
+          route: sendMessage
+  ping:
+    handler: handler.ping
+    events:
+      - http:
+          path: ping
+          method: get
